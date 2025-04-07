@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registration</title>
+    <link rel="stylesheet" type="text/css" href="style/style.css">
+</head>
+<body>
+<div class="form_container">
+    <h1 class="form_header">Registration</h1>
+    <form id="registerForm">
+        <div class="form_data">
+            <label for="username">Username</label><br>
+            <input type="text" id="username" name="username" required><br>
+            <label for="password">Password</label><br>
+            <input type="password" id="password" name="password" required><br>
+            <input type="checkbox" id="terms" name="terms" required>
+            <label for="terms">I agree to the terms and conditions</label><br>
+            <p id="status"></p>
+        </div>
+        <button type="submit" id="submit">Register</button>
+        <a href="log.html">Already have an account?</a>
+    </form>
+</div>
+<script src="js/register.js"></script>
+</body>
+</html>

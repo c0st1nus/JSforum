@@ -1,0 +1,21 @@
+{
+  "name": "kostya-forum",
+  "version": "1.0.0",
+  "description": "The Konstantin Koshevoy's (11D) project work for Computer Science Advanced course 11 grade",
+  "keywords": [
+    "Forum"
+  ],
+  "license": "MIT",
+  "author": "Koshevoy K",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "mysql2": "^3.14.0"
+  }
+}

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Home - Chat</title>
+  <link rel="stylesheet" type="text/css" href="style/style.css">
+  <link rel="stylesheet" type="text/css" href="style/header.css">
+  <link rel="stylesheet" type="text/css" href="style/messager.css">
+  <script type="module" src="./js/globals.js"></script>
+  <script type="module" src="./js/header.js"></script>
+</head>
+<body>
+  <main>
+    <h1>Welcome to the Chat Forum</h1>
+    <div class="chat-container">
+      <div class="chat-list">
+        <ul id="chatList">
+          <li data-chatid="1">General Chat</li>
+          <li data-chatid="2">Random Chat</li>
+        </ul>
+      </div>
+      <div class="chat-messages">
+        <div class="messages" id="messages">
+          <!-- Messages will appear here -->
+        </div>
+        <div class="message-input">
+          <textarea id="messageInput" placeholder="Type your message..."></textarea>
+          <button id="sendBtn">Send</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <p>&copy; 2023 Your Company</p>
+  </footer>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const chatList = document.getElementById('chatList');
+      const messagesDiv = document.getElementById('messages');
+      const messageInput = document.getElementById('messageInput');
+      const sendBtn = document.getElementById('sendBtn');
+      
+      let currentChatId = null;
+      let lastMessageId = 0;
+      let pollingInterval = null;
+      const POLLING_INTERVAL_MS = 2000; // Poll every 2 seconds
+      
+      // Function to fetch messages from server
+      async function fetchMessages(chatId, showLoading = false) {
+        if (showLoading) {
+          messagesDiv.innerHTML = '<p>Loading messages...</p>';
+        }
+        
+        try {
+          const response = await fetch(`/api/messenger/chats/${chatId}/messages`);
+          const data = await response.json();
+          
+          if (response.ok) {
+            if (data.messages && data.messages.length) {
+              // Update the view
+              updateMessagesView(data.messages, showLoading);
+            } else if (showLoading) {
+              messagesDiv.innerHTML = '<p>No messages in this chat.</p>';
+            }
+          } else {
+            if (showLoading) {
+              messagesDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+            }
+          }
+        } catch (error) {
+          if (showLoading) {
+            messagesDiv.innerHTML = '<p>Error loading messages.</p>';
+          }
+          console.error('Message fetch error:', error);
+        }
+      }
+      
+      // Function to intelligently update the messages view
+      function updateMessagesView(messages, forceRefresh = false) {
+        // Sort messages by date and time (newest last)
+        messages.sort((a, b) => {
+          const dateA = new Date(`${a.send_date}T${a.send_time}`);
+          const dateB = new Date(`${b.send_date}T${b.send_time}`);
+          return dateA - dateB;
+        });
+        
+        if (forceRefresh) {
+          // Full refresh of messages
+          messagesDiv.innerHTML = messages.map(msg =>
+            `<p data-msgid="${msg.message_ID}"><strong>${msg.sender}:</strong> ${msg.message} <span style="font-size:0.8em;color:#888;">(${msg.send_date} ${msg.send_time})</span></p>`
+          ).join('');
+        } else {
+          // Check for new messages
+          const currentLastMsgId = messages.length > 0 ? 
+                                   Math.max(...messages.map(m => parseInt(m.message_ID))) : 
+                                   0;
+          
+          if (currentLastMsgId > lastMessageId) {
+            // We have new messages - append only the new ones
+            const newMessages = messages.filter(msg => parseInt(msg.message_ID) > lastMessageId);
+            
+            const wasAtBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop <= messagesDiv.clientHeight + 50;
+            
+            // Append new messages
+            for (const msg of newMessages) {
+              const msgElement = document.createElement('p');
+              msgElement.dataset.msgid = msg.message_ID;
+              msgElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.message} <span style="font-size:0.8em;color:#888;">(${msg.send_date} ${msg.send_time})</span>`;
+              messagesDiv.appendChild(msgElement);
+            }
+            
+            // If user was at bottom, scroll to new content
+            if (wasAtBottom) {
+              messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+          }
+        }
+        
+        // Update last message ID
+        if (messages.length > 0) {
+          lastMessageId = Math.max(...messages.map(m => parseInt(m.message_ID)));
+        }
+        
+        // Always scroll to bottom on full refresh
+        if (forceRefresh) {
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+      }
+      
+      // Set up polling for a specific chat
+      function startPolling(chatId) {
+        // Clear any existing polling
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+        }
+        
+        // Set up new polling
+        pollingInterval = setInterval(() => {
+          fetchMessages(chatId);
+        }, POLLING_INTERVAL_MS);
+      }
+      
+      // Handle chat selection
+      chatList.addEventListener('click', async (e) => {
+        if (e.target && e.target.matches('li')) {
+          const newChatId = e.target.getAttribute('data-chatid');
+          
+          // Highlight the selected chat
+          document.querySelectorAll('#chatList li').forEach(li => {
+            li.classList.remove('active');
+          });
+          e.target.classList.add('active');
+          
+          // Reset if switching chats
+          if (currentChatId !== newChatId) {
+            currentChatId = newChatId;
+            lastMessageId = 0;
+            
+            // Get initial messages with loading indicator
+            await fetchMessages(currentChatId, true);
+            
+            // Start polling for this chat
+            startPolling(currentChatId);
+          }
+        }
+      });
+      
+      // Send a message
+      sendBtn.addEventListener('click', async () => {
+        const message = messageInput.value.trim();
+        if (!message || !currentChatId) return;
+        
+        // Clear input field
+        messageInput.value = '';
+        
+        // Post the message to the server
+        try {
+          const response = await fetch(`/api/messenger/chats/${currentChatId}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+          });
+          
+          if (response.ok) {
+            // Immediately fetch updated messages (including our new one)
+            fetchMessages(currentChatId);
+          } else {
+            console.error('Error sending message:', await response.json());
+          }
+        } catch (error) {
+          console.error('Message post error:', error);
+        }
+      });
+      
+      // Handle enter key in the message input
+      messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendBtn.click();
+        }
+      });
+      
+      // Clean up polling when the page unloads
+      window.addEventListener('beforeunload', () => {
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+        }
+      });
+      
+      // Auto-select the first chat on page load
+      const firstChat = document.querySelector('#chatList li');
+      if (firstChat) {
+        firstChat.click();
+      }
+    });
+  </script>
+</body>
+</html>
