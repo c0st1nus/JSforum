@@ -29,28 +29,18 @@ A real-time chat application built with Node.js, Express, and MySQL. Created by 
    ```
 
 3. Create a MySQL database named `forum` with the following tables
--
 
-users
+- `users` (user_ID, username, password)
 
-(user_ID, username, password)
-
--
-
-chats
-
-(chat_ID, chat_name, owner_ID, creation_date)
+- `chats` (chat_ID, chat_name, owner_ID, creation_date)
 
 - `conversations` (chat_ID, user_ID)
--
 
-messages
-
-(message_ID, message, sender_ID, chat_ID, send_date, send_time)
+- `messages` (message_ID, message, sender_ID, chat_ID, send_date, send_time)
 
 1. Update database configuration in
 
-connect.js
+`connect.js`
 
 if needed:
 
@@ -66,38 +56,30 @@ const dbConfig = {
 ## Usage
 
 1. Start the server:
+
    ```sh
    npm start
    ```
+
 2. Open your browser and navigate to `http://localhost:3000`
 3. Register a new account or login with existing credentials
 4. Start chatting in General or Random chat rooms
 
 ## Project Structure
 
--
+- `server.js`
+Main server file
 
-server.js
+- `auth.js`
+Authentication routes and logic
 
-- Main server file
--
+- `connect.js`
+ Database connection
 
-auth.js
+- `messenger.js`
+Chat functionality
 
-- Authentication routes and logic
--
-
-connect.js
-
-- Database connection
--
-
-messenger.js
-
-- Chat functionality
--
-
-public
+### `public`
 
 - Frontend files
 - index.html - Main chat interface
