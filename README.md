@@ -125,4 +125,4 @@ MIT
 
 ---
 
-Developed by Koshevoy K, 2023
+Developed by Koshevoy K, 2025
