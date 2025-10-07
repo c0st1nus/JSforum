@@ -25,7 +25,7 @@ app.use(session({
   cookie: { secure: process.env.NODE_ENV === 'production' }
 }));
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/messenger', messengerRoutes);
 
